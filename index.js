@@ -76,7 +76,7 @@ app.get('/api/search', cors(), async (req, res) => {
     if (!pagesContainingString || pagesContainingString.length === 0) {
       return res.status(404).json({ message: 'String not found in any page' });
     }
-    const pageNumbers = pagesContainingString.map((page) => page.page);
+    const pageNumbers = pagesContainingString.map((page) => page);
     res.json({ message: 'Pages found with the string', pages: pageNumbers });
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
