@@ -72,7 +72,7 @@ app.get('/api/search', cors(), async (req, res) => {
   const { searchString } =req.query;
   //console.log(searchString);
   try {
-    const pagesContainingString = await Gita.find({ content: { $regex: searchString, $options: 'i' } }, { _id: 0, page: 1 });
+    const pagesContainingString = await Gita.find({ content: { $regex: searchString, $options: 'i' } }, { _id: 0, page: 1 , content: 1});
     if (!pagesContainingString || pagesContainingString.length === 0) {
       return res.status(404).json({ message: 'String not found in any page' });
     }
