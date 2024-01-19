@@ -11,10 +11,9 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-mongoose.connect(`mongodb+srv://nopenoppp:${process.env.DB_PASSWORD}@cluster0.ip2z7hj.mongodb.net/gitaDB`, {    
+mongoose.connect(`mongodb+srv://nopenoppp:${process.env.DB_PASSWORD}@cluster0.ip2z7hj.mongodb.net/gitaDB`, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  
 });
 
 const db = mongoose.connection;
@@ -23,67 +22,72 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-// Create a schema
+// Updated schema
 const gitaSchema = new mongoose.Schema({
-  page: Number,
+  word: String,    // Updated schema with 'word' instead of 'page'
   content: String,
 });
 
 const Gita = mongoose.model('Gita', gitaSchema);
 
-
-// Routes
-app.get('/api/pages/:page',cors(),async (req, res) => {
-  const { page } = req.params;
+// Updated routes
+app.get('/api/words/:word', cors(), async (req, res) => {
+  const { word } = req.params;
 
   try {
-    const gitaPage = await Gita.findOne({ page: parseInt(page) });
-    if (!gitaPage) {
-      return res.status(404).json({ message: 'Page not found' });
+    const gitaWord = await Gita.findOne({ word });
+    if (!gitaWord) {
+      return res.status(404).json({ message: 'Word not found' });
     }
-    res.json(gitaPage);
+    res.json(gitaWord);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
   }
 });
 
-app.post('/api/pages',cors(),async (req, res) => {
-  //console.log("post request came");
-
-  const { page, content } = req.body;
+app.post('/api/words', cors(), async (req, res) => {
+  const wordsArray = req.body;
+  // console.log(wordsArray);
 
   try {
-    let gitaPage = await Gita.findOne({ page });
-    if (gitaPage) {
-      return res.status(400).json({ message: 'Page already exists' });
-    }
+    // Use bulkWrite for optimized insertion or update
+    const bulkOps = wordsArray.map(({ word, content }) => ({
+      updateOne: {
+        filter: { word },
+        update: { $set: { word, content } },
+        upsert: true,  // If not present, insert a new document
+      },
+    }));
 
-    gitaPage = new Gita({ page, content });
-    await gitaPage.save();
-    res.status(201).json({ message: 'Page created successfully', gitaPage });
+    await Gita.bulkWrite(bulkOps);
+
+    res.status(201).json({ message: 'Words updated/added successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
   }
 });
-
-// ... (your existing code)
 
 app.get('/api/search', cors(), async (req, res) => {
-  const { searchString } =req.query;
-  //console.log(searchString);
+  const { searchString } = req.query;
+
   try {
-    const pagesContainingString = await Gita.find({ content: { $regex: searchString, $options: 'i' } }, { _id: 0, page: 1 , content: 1});
-    if (!pagesContainingString || pagesContainingString.length === 0) {
-      return res.status(404).json({ message: 'String not found in any page' });
+    const wordsContainingString = await Gita.find(
+      { word: { $regex: searchString, $options: 'i' } },
+      { _id: 0, word: 1 }
+    ).limit(20); // Limit results to 10
+
+    if (!wordsContainingString || wordsContainingString.length === 0) {
+      return res.status(404).json({ message: 'String not found in any word' });
     }
-    const pageNumbers = pagesContainingString.map((page) => page);
-    res.json({ message: 'Pages found with the string', pages: pageNumbers });
+  
+    const result = wordsContainingString.map(({ word }) => ({ word }));
+    res.json({ message: 'Words found with the string', words: result });
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
   }
 });
 
-const PORT =  5000;
+const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
