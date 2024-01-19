@@ -74,7 +74,7 @@ app.get('/api/search', cors(), async (req, res) => {
     const wordsContainingString = await Gita.find(
       { word: { $regex: searchString, $options: 'i' } },
       { _id: 0, word: 1 }
-    ).limit(20); // Limit results to 10
+    ).limit(5); // Limit results to 10
 
     if (!wordsContainingString || wordsContainingString.length === 0) {
       return res.status(404).json({ message: 'String not found in any word' });
